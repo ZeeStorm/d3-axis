@@ -33,6 +33,7 @@ function axis(orient, scale) {
       tickFormat = null,
       tickSizeInner = 6,
       tickSizeOuter = 6,
+      tickSizeColumn = 50,
       tickPadding = 3,
       k = orient === top || orient === left ? -1 : 1,
       x, y = orient === left || orient === right ? (x = "x", "y") : (x = "y", "x"),
@@ -48,17 +49,35 @@ function axis(orient, scale) {
         position = (scale.bandwidth ? center : identity)(scale.copy()),
         selection = context.selection ? context.selection() : context,
         path = selection.selectAll(".domain").data([null]),
-        tick = selection.selectAll(".tick").data(values, scale).order(),
+        tick = selection.selectAll(".tick").data(values[0], scale).order(),
         tickExit = tick.exit(),
         tickEnter = tick.enter().append("g").attr("class", "tick"),
+        rect = tick.select("rect.column"),
         line = tick.select("line"),
-        text = tick.select("text");
+        text = tick.select("text"),
+        colWidth = (range1 / values[0].length);
 
     path = path.merge(path.enter().insert("path", ".tick")
         .attr("class", "domain")
         .attr("stroke", "#000"));
 
     tick = tick.merge(tickEnter);
+
+	rect = rect.merge(tickEnter.append("rect")
+		.attr("class", "column")
+		.attr("x", 0)
+		.attr("y", -12)
+		.attr("height", tickSizeColumn)
+		.attr("width", colWidth));
+
+	if (!tick.filter(function(d, i) { return i == 0; }).select(".prefix-column").node()) {
+		rect = rect.merge(tick.filter(function(d, i) { return i == 0; }).append("rect")
+			.attr("class", "prefix-column")
+			.attr("x", 0)
+			.attr("y", -12)
+			.attr("height", tickSizeColumn)
+			.attr("width", colWidth));
+	}
 
     line = line.merge(tickEnter.append("line")
         .attr("stroke", "#000")
@@ -92,11 +111,51 @@ function axis(orient, scale) {
     path
         .attr("d", orient === left || orient == right
             ? "M" + k * tickSizeOuter + "," + range0 + "H0.5V" + range1 + "H" + k * tickSizeOuter
-            : "M" + range0 + "," + k * tickSizeOuter + "V0.5H" + range1 + "V" + k * tickSizeOuter);
+            : "M" + range0 + "," + k * tickSizeOuter + "V0.5H" + range1 + "V" + k * tickSizeOuter)
+        .attr("transform", translateY(tickSizeInner * -1));
 
     tick
         .attr("opacity", 1)
         .attr("transform", function(d) { return transform(position(d)); });
+
+    var maxWidth = 0;
+
+    rect
+		.attr("width", function(d, i) {
+			var width = 0;
+
+			if (i + 1 < tick.data().length) {
+				var nextData = tick.data()[i + 1];
+
+				width = position(nextData) - position(d);
+				maxWidth = Math.max(maxWidth, width);
+			} else {
+				width =  maxWidth;
+			}
+
+			return width;
+		})
+		.attr("class", function(d, i) {
+			return "column " + ((values[1] + i) % 2 == 1 ? "even" : "odd");
+		})
+        .attr("height", tickSizeColumn);
+
+    // we don't really care that this is inaccurate since we only show the first one
+    // so yes, the "x" = "width" thing is not correct, but don't care
+	var prefixCol = tick.select(".prefix-column")
+		.attr("width", function(d, i) {
+			var width = 0;
+
+			if (i + 1 < tick.data().length) {
+				var nextData = tick.data()[i + 1];
+				width = position(nextData) - position(d);
+			}
+
+			return width;
+		})
+		.attr("height", tickSizeColumn);
+
+	prefixCol.attr("x", prefixCol.attr("width") * -1);
 
     line
         .attr(x + "2", k * tickSizeInner);
@@ -146,6 +205,10 @@ function axis(orient, scale) {
   axis.tickSizeOuter = function(_) {
     return arguments.length ? (tickSizeOuter = +_, axis) : tickSizeOuter;
   };
+
+  axis.tickSizeColumn = function(_) {
+	return arguments.length ? (tickSizeColumn = +_, axis) : tickSizeColumn;
+};
 
   axis.tickPadding = function(_) {
     return arguments.length ? (tickPadding = +_, axis) : tickPadding;
