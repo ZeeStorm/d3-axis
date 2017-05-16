@@ -35,6 +35,7 @@ function axis(orient, scale) {
       tickSizeOuter = 6,
       tickSizeColumn = 50,
       tickPadding = 3,
+      tickDifference = null,
       k = orient === top || orient === left ? -1 : 1,
       x, y = orient === left || orient === right ? (x = "x", "y") : (x = "y", "x"),
       transform = orient === top || orient === bottom ? translateX : translateY;
@@ -56,6 +57,8 @@ function axis(orient, scale) {
         line = tick.select("line"),
         text = tick.select("text"),
         colWidth = (range1 / values[0].length);
+
+    tickDifference = ((values[0][1] - values[0][0]) / 1000);
 
     path = path.merge(path.enter().insert("path", ".tick")
         .attr("class", "domain")
@@ -212,6 +215,10 @@ function axis(orient, scale) {
 
   axis.tickPadding = function(_) {
     return arguments.length ? (tickPadding = +_, axis) : tickPadding;
+  };
+
+  axis.tickDifference = function() {
+    return tickDifference;
   };
 
   return axis;
