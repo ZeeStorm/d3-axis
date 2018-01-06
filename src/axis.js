@@ -38,9 +38,10 @@ function axis(orient, scale) {
       tickDifference = null,
       k = orient === top || orient === left ? -1 : 1,
       x, y = orient === left || orient === right ? (x = "x", "y") : (x = "y", "x"),
-      transform = orient === top || orient === bottom ? translateX : translateY;
+      transform = orient === top || orient === bottom ? translateX : translateY,
+      hasColumns = false;
 
-  function axis(context, hasColumns) {
+  function axis(context) {
     var values = tickValues == null ? (scale.ticks ? scale.ticks.apply(scale, tickArguments) : scale.domain()) : tickValues,
         format = tickFormat == null ? (scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments) : identity) : tickFormat,
         spacing = Math.max(tickSizeInner, 0) + tickPadding,
@@ -180,6 +181,10 @@ function axis(orient, scale) {
     selection
         .each(function() { this.__axis = position; });
   }
+
+  axis.hasColumns = function(_) {
+    return arguments.length ? (hasColumns = _, axis) : hasColumns;
+  };
 
   axis.scale = function(_) {
     return arguments.length ? (scale = _, axis) : scale;
